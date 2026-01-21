@@ -1,9 +1,49 @@
--- Paste ini di Delta Executor:
-local remote = game.ReplicatedStorage.Remotess:GetChildren()[1]
+warn("╔══════════════════════════════════╗")
+warn("║    QUICK DONATION TEST           ║")
+warn("╚══════════════════════════════════╝")
 
--- Test spam
-for i = 1, 10 do
-    remote:FireServer(50000, "Test")
-    print("Sent:", i)
-    wait(0.1)
+wait(1)
+
+local RS = game:GetService("ReplicatedStorage")
+local Remotess = RS:WaitForChild("Remotess", 5)
+
+if not Remotess then
+    warn("❌ REMOTESS NOT FOUND!")
+    return
 end
+
+warn("✓ Remotess found")
+
+local remote = nil
+for _, child in pairs(Remotess:GetChildren()) do
+    if child:IsA("RemoteEvent") then
+        remote = child
+        warn("✓ RemoteEvent found:", child.Name)
+        break
+    end
+end
+
+if not remote then
+    warn("❌ NO REMOTEEVENT!")
+    return
+end
+
+warn("\n[TEST] Firing once...")
+local ok = pcall(function()
+    remote:FireServer(50000, "QuickTest")
+end)
+warn(ok and "✓ SUCCESS - SERVER ACCEPTS!" or "❌ FAILED")
+
+wait(1)
+
+warn("\n[TEST] Spam 5x...")
+for i = 1, 5 do
+    pcall(function()
+        remote:FireServer(50000, "Spam")
+    end)
+    warn("  Sent:", i)
+    wait(0.2)
+end
+
+warn("\n✓ TEST COMPLETE")
+warn("Remote name:", remote.Name)
