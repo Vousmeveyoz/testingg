@@ -1,0 +1,9 @@
+-- Paste ini di Delta Executor:
+local remote = game.ReplicatedStorage.Remotess:GetChildren()[1]
+
+-- Test spam
+for i = 1, 10 do
+    remote:FireServer(50000, "Test")
+    print("Sent:", i)
+    wait(0.1)
+end
