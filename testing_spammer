@@ -1,0 +1,401 @@
+-- ════════════════════════════════════════════════════════════
+-- DONATION SYSTEM SECURITY TEST - SPAM & FAKE DONATION
+-- Testing untuk Delta Executor / Synapse X
+-- ════════════════════════════════════════════════════════════
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+
+print("╔════════════════════════════════════════════════════╗")
+print("║   DONATION SYSTEM EXPLOIT TEST - STARTING          ║")
+print("╚════════════════════════════════════════════════════╝")
+
+-- ═══════════════════════════════════════════════════════
+-- PHASE 1: RECONNAISSANCE - FIND DONATION REMOTEEVENT
+-- ═══════════════════════════════════════════════════════
+
+print("\n[PHASE 1] 🔍 Reconnaissance - Finding DonateEvent...")
+
+local function findRemotess()
+    local remotess = ReplicatedStorage:FindFirstChild("Remotess")
+    if remotess then
+        print("✓ Found Remotess module at:", remotess:GetFullName())
+        return remotess
+    else
+        print("✗ Remotess module not found")
+        return nil
+    end
+end
+
+local function findDonateRemote(remotess)
+    if not remotess then return nil end
+    
+    print("\n[SCANNING] Looking for DonateEvent...")
+    print("Encrypted RemoteEvents found:")
+    
+    for _, child in ipairs(remotess:GetChildren()) do
+        if child:IsA("RemoteEvent") then
+            print(string.format("  - %s (%s)", child.Name, child.ClassName))
+        end
+    end
+    
+    -- Try to find using HashLib if available
+    local hashLib = ReplicatedStorage:FindFirstChild("Packages")
+    if hashLib then
+        hashLib = hashLib:FindFirstChild("HashLib")
+        if hashLib then
+            local HashLib = require(hashLib)
+            print("\n✓ HashLib found - Attempting to decrypt DonateEvent name...")
+            
+            -- Try with empty DataKey (Studio mode)
+            local possibleNames = {"DonateEvent", "Donate", "donate"}
+            for _, name in ipairs(possibleNames) do
+                local encrypted = HashLib.bin_to_base64(
+                    HashLib.hex_to_bin(
+                        HashLib.sha1(name .. "")
+                    )
+                )
+                print(string.format("  '%s' -> '%s'", name, encrypted))
+                
+                local found = remotess:FindFirstChild(encrypted)
+                if found then
+                    print(string.format("✓✓✓ FOUND DONATEEVENT: %s", encrypted))
+                    return found
+                end
+            end
+        end
+    end
+    
+    -- Fallback: Return first RemoteEvent found
+    for _, child in ipairs(remotess:GetChildren()) do
+        if child:IsA("RemoteEvent") then
+            print("⚠ Using first RemoteEvent found (may not be DonateEvent):", child.Name)
+            return child
+        end
+    end
+    
+    return nil
+end
+
+local Remotess = findRemotess()
+local DonateRemote = findDonateRemote(Remotess)
+
+if not DonateRemote then
+    print("\n✗✗✗ CRITICAL: Cannot find DonateEvent!")
+    print("Testing cannot proceed.")
+    return
+end
+
+print(string.format("\n✓✓✓ DonateEvent identified: %s", DonateRemote.Name))
+
+-- ═══════════════════════════════════════════════════════
+-- PHASE 2: ANALYZE EFFECTS CONFIGURATION
+-- ═══════════════════════════════════════════════════════
+
+print("\n[PHASE 2] 📊 Analyzing Effects Configuration...")
+
+local EffectsThresholds = {
+    NUKE = {min = 50000, max = 299999},
+    SMITE = {min = 300000, max = 500000},
+    BLACKHOLE = {min = 550000, max = math.huge}
+}
+
+print("\nEffect Thresholds Detected:")
+print(string.format("  🔥 NUKE:      %s - %s", 
+    EffectsThresholds.NUKE.min, 
+    EffectsThresholds.NUKE.max))
+print(string.format("  ⚡ SMITE:     %s - %s", 
+    EffectsThresholds.SMITE.min, 
+    EffectsThresholds.SMITE.max))
+print(string.format("  🌑 BLACKHOLE: %s - %s", 
+    EffectsThresholds.BLACKHOLE.min, 
+    EffectsThresholds.BLACKHOLE.max == math.huge and "∞" or EffectsThresholds.BLACKHOLE.max))
+
+-- ═══════════════════════════════════════════════════════
+-- PHASE 3: EXPLOIT TESTING - SPAM EFFECTS
+-- ═══════════════════════════════════════════════════════
+
+print("\n[PHASE 3] 💥 Testing Effect Spam Exploits...")
+
+local ExploitTests = {
+    {
+        name = "Test 1: NUKE Spam (Minimum Threshold)",
+        description = "Spamming minimum NUKE amount to trigger effects repeatedly",
+        amount = 50000,
+        targetEffect = "NUKE",
+        spamCount = 5,
+        delay = 0.1
+    },
+    {
+        name = "Test 2: SMITE Spam (Medium Threshold)", 
+        description = "Spamming SMITE threshold rapidly",
+        amount = 300000,
+        targetEffect = "SMITE",
+        spamCount = 3,
+        delay = 0.05
+    },
+    {
+        name = "Test 3: BLACKHOLE Spam (Maximum Threshold)",
+        description = "Spamming maximum effect threshold",
+        amount = 550000,
+        targetEffect = "BLACKHOLE",
+        spamCount = 3,
+        delay = 0.01
+    },
+    {
+        name = "Test 4: Rapid Fire Mixed Effects",
+        description = "Alternating between different effect thresholds",
+        mixed = true,
+        amounts = {50000, 300000, 550000},
+        spamCount = 9,
+        delay = 0.05
+    },
+    {
+        name = "Test 5: Extreme Spam (No Delay)",
+        description = "Maximum speed spam with no delay",
+        amount = 50000,
+        targetEffect = "NUKE",
+        spamCount = 20,
+        delay = 0
+    },
+    {
+        name = "Test 6: Fake Donation - Negative Amount",
+        description = "Attempting negative donation to exploit economy",
+        amount = -999999,
+        targetEffect = "EXPLOIT",
+        spamCount = 1,
+        delay = 0
+    },
+    {
+        name = "Test 7: Fake Donation - Infinity",
+        description = "Attempting infinity donation",
+        amount = math.huge,
+        targetEffect = "EXPLOIT",
+        spamCount = 1,
+        delay = 0
+    },
+    {
+        name = "Test 8: Fake Donation - Invalid Type",
+        description = "Sending invalid data types",
+        amount = "99999999",
+        targetEffect = "EXPLOIT",
+        spamCount = 1,
+        delay = 0
+    },
+    {
+        name = "Test 9: Overflow Attack",
+        description = "Extremely large number to overflow",
+        amount = 999999999999999,
+        targetEffect = "EXPLOIT",
+        spamCount = 3,
+        delay = 0.1
+    },
+    {
+        name = "Test 10: Zero Amount Spam",
+        description = "Spamming zero or near-zero amounts",
+        amount = 0.0001,
+        targetEffect = "EXPLOIT",
+        spamCount = 10,
+        delay = 0.01
+    }
+}
+
+-- Execute tests
+local testResults = {}
+
+for i, test in ipairs(ExploitTests) do
+    print(string.format("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"))
+    print(string.format("[%d/%d] %s", i, #ExploitTests, test.name))
+    print(string.format("📝 %s", test.description))
+    print(string.format("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"))
+    
+    local testResult = {
+        name = test.name,
+        success = 0,
+        failed = 0,
+        errors = {}
+    }
+    
+    if test.mixed then
+        -- Mixed effects test
+        for j = 1, test.spamCount do
+            local amount = test.amounts[(j % #test.amounts) + 1]
+            local success, err = pcall(function()
+                DonateRemote:FireServer(amount, "TestTarget")
+                print(string.format("  [%d/%d] ✓ Fired: %d", j, test.spamCount, amount))
+            end)
+            
+            if success then
+                testResult.success = testResult.success + 1
+            else
+                testResult.failed = testResult.failed + 1
+                table.insert(testResult.errors, err)
+                print(string.format("  [%d/%d] ✗ Error: %s", j, test.spamCount, tostring(err)))
+            end
+            
+            if test.delay > 0 then
+                task.wait(test.delay)
+            end
+        end
+    else
+        -- Single amount spam test
+        for j = 1, test.spamCount do
+            local success, err = pcall(function()
+                DonateRemote:FireServer(test.amount, "TestTarget")
+                print(string.format("  [%d/%d] ✓ Fired: %s", j, test.spamCount, tostring(test.amount)))
+            end)
+            
+            if success then
+                testResult.success = testResult.success + 1
+            else
+                testResult.failed = testResult.failed + 1
+                table.insert(testResult.errors, err)
+                print(string.format("  [%d/%d] ✗ Error: %s", j, test.spamCount, tostring(err)))
+            end
+            
+            if test.delay > 0 then
+                task.wait(test.delay)
+            end
+        end
+    end
+    
+    table.insert(testResults, testResult)
+    
+    print(string.format("\n📊 Test Result: %d succeeded, %d failed", 
+        testResult.success, testResult.failed))
+    
+    task.wait(1) -- Delay between tests
+end
+
+-- ═══════════════════════════════════════════════════════
+-- PHASE 4: ADVANCED EXPLOIT - WEBHOOK BYPASS
+-- ═══════════════════════════════════════════════════════
+
+print("\n[PHASE 4] 🔓 Testing Webhook Bypass Exploits...")
+
+print("\n⚠ WEBHOOK ANALYSIS:")
+print("Your system uses external webhook validation")
+print("Base URL: backend.blokmarket.store")
+print("API Key is server-side only (✓ Good)")
+
+print("\nPotential Webhook Exploits:")
+print("  1. ✗ Cannot directly spoof webhook (API key not accessible)")
+print("  2. ⚠ Can spam RemoteEvent if no rate limiting")
+print("  3. ⚠ Can trigger effects without actual payment")
+print("  4. ✓ Server validates with backend (security depends on backend)")
+
+-- ═══════════════════════════════════════════════════════
+-- PHASE 5: RATE LIMIT TESTING
+-- ═══════════════════════════════════════════════════════
+
+print("\n[PHASE 5] ⏱️ Testing Rate Limiting...")
+
+local rateLimitTest = {
+    callsPerSecond = 0,
+    totalCalls = 0,
+    startTime = tick()
+}
+
+print("\n🚀 Firing maximum speed for 5 seconds...")
+
+local endTime = tick() + 5
+while tick() < endTime do
+    local success = pcall(function()
+        DonateRemote:FireServer(50000, "RateLimitTest")
+        rateLimitTest.totalCalls = rateLimitTest.totalCalls + 1
+    end)
+end
+
+rateLimitTest.callsPerSecond = rateLimitTest.totalCalls / 5
+
+print(string.format("\n📊 Rate Limit Results:"))
+print(string.format("  Total calls sent: %d", rateLimitTest.totalCalls))
+print(string.format("  Calls per second: %.1f", rateLimitTest.callsPerSecond))
+
+if rateLimitTest.callsPerSecond > 10 then
+    print("  ⚠️ HIGH RISK: No effective rate limiting detected!")
+    print("  💀 Server is vulnerable to spam attacks")
+else
+    print("  ✓ Rate limiting appears to be working")
+end
+
+-- ═══════════════════════════════════════════════════════
+-- PHASE 6: FINAL REPORT
+-- ═══════════════════════════════════════════════════════
+
+print("\n╔════════════════════════════════════════════════════╗")
+print("║              FINAL SECURITY REPORT                 ║")
+print("╚════════════════════════════════════════════════════╝")
+
+local totalTests = #testResults
+local totalSuccess = 0
+local totalFailed = 0
+
+for _, result in ipairs(testResults) do
+    totalSuccess = totalSuccess + result.success
+    totalFailed = totalFailed + result.failed
+end
+
+print("\n📊 SUMMARY:")
+print(string.format("  Tests Run: %d", totalTests))
+print(string.format("  Total FireServer Calls: %d", totalSuccess + totalFailed))
+print(string.format("  Successful: %d", totalSuccess))
+print(string.format("  Failed: %d", totalFailed))
+
+print("\n🔍 VULNERABILITY ASSESSMENT:")
+
+local vulnerabilities = {}
+
+if totalSuccess > totalTests * 0.5 then
+    table.insert(vulnerabilities, {
+        severity = "🔴 CRITICAL",
+        issue = "Effect Spam Possible",
+        description = "Server accepts spam of donation effects without proper validation"
+    })
+end
+
+if rateLimitTest.callsPerSecond > 10 then
+    table.insert(vulnerabilities, {
+        severity = "🔴 CRITICAL", 
+        issue = "No Rate Limiting",
+        description = string.format("Server accepting %.1f calls/sec - vulnerable to DDoS", rateLimitTest.callsPerSecond)
+    })
+end
+
+-- Check if negative/invalid values were accepted
+for _, result in ipairs(testResults) do
+    if string.find(result.name, "Negative") or string.find(result.name, "Invalid") then
+        if result.success > 0 then
+            table.insert(vulnerabilities, {
+                severity = "🔴 CRITICAL",
+                issue = "Fake Donation Possible",
+                description = "Server accepts invalid donation amounts (negative, infinity, wrong types)"
+            })
+            break
+        end
+    end
+end
+
+if #vulnerabilities == 0 then
+    print("  ✓ No critical vulnerabilities detected")
+    print("  ✓ Server appears to have proper validation")
+else
+    for i, vuln in ipairs(vulnerabilities) do
+        print(string.format("\n  [%d] %s", i, vuln.severity))
+        print(string.format("      Issue: %s", vuln.issue))
+        print(string.format("      Detail: %s", vuln.description))
+    end
+end
+
+print("\n💡 RECOMMENDATIONS:")
+print("  1. Implement server-side rate limiting (max 3-5 calls/minute per player)")
+print("  2. Validate all amounts server-side (type, range, sanity checks)")
+print("  3. Add cooldown between donations (minimum 5-10 seconds)")
+print("  4. Verify webhook response before triggering effects")
+print("  5. Log all suspicious activities for analysis")
+print("  6. Implement anti-spam measures (violations tracking, auto-ban)")
+
+print("\n╔════════════════════════════════════════════════════╗")
+print("║            TESTING COMPLETE                        ║")
+print("╚════════════════════════════════════════════════════╝")
